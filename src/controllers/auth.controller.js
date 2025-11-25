@@ -14,8 +14,9 @@ class AuthController {
         });
 
         this.sendTokenResponse(res, token, 201, {
-            message: "User registered successfully",
-            data: {user}
+            success: true,
+            message: "Utilisateur enregistré avec succès",
+            data: user
         })
     })
 
@@ -26,8 +27,9 @@ class AuthController {
         const {user, token} = await authService.login(email, password, ip)
 
         this.sendTokenResponse(res, token, 201, {
-            message: "User login successfully",
-            data: {user}
+            success: true,
+            message: "Utilisateur connecté avec succès",
+            data: user
         })
     })
 
@@ -38,7 +40,8 @@ class AuthController {
         })
 
         res.status(200).json({
-            message: "User logged out successfully"
+            success: true,
+            message: "Utilisateur déconnecté avec succès",
         })
     })
 
@@ -46,8 +49,9 @@ class AuthController {
         const user = req.user;
 
         return res.status(200).json({
-            message: "User profile fetched successfully",
-            data: {user}
+            success: true,
+            message: "Utilisateur récupéré avec succès",
+            data: user
         })
     })
 
@@ -62,8 +66,8 @@ class AuthController {
         })
 
         res.status(200).json({
-            message: "User profile updated successfully",
-            data: {user: updatedUser}
+            message: "Utilisateur mis à jour avec succès",
+            data: updatedUser
         })
     })
 
@@ -76,7 +80,8 @@ class AuthController {
         res.clearCookie('jwt');
 
         res.status(200).json({
-            message: "User password updated successfully",
+            success: true,
+            message: "Utilisateur mot de passe mis à jour avec succès. Veuillez vous reconnecter.",
         })
     })
 
@@ -86,6 +91,7 @@ class AuthController {
         const result = await authService.forgotPassword(email, req.ip || req.headers['X-forwarded-for'] || req.connection.remoteAddress || 'N/A');
 
         res.status(200).json({
+            success: true,
             message: result.message,
         });
     });
@@ -96,15 +102,17 @@ class AuthController {
 
         if (newPassword !== confirmNewPassword){
             return res.status(400).json({
-                message: "Passwords do not match",
+                message: "Mot de passe et confirmation du mot de passe ne correspondent pas",
+                success: false
             })
         }
 
         const result = await authService.resetPassword(token, newPassword);
 
         this.sendTokenResponse(res, result.token, 201, {
+            success: true,
             message: result.message,
-            data: {user: result.user}
+            data: result.user
         })
     })
 
@@ -123,6 +131,7 @@ class AuthController {
         res.status(statusCode).json({
             ...payload,
             token,
+            success: true
         })
     }
 }

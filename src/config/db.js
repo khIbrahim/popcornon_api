@@ -13,7 +13,6 @@ export async function connectDB() {
             minPoolSize: process.env.MONGODB_MIN_POOL_SIZE,
             appName: process.env.MONGODB_APP_NAME,
         }
-        console.log(options);
 
         const url = process.env.MONGODB_URI;
 

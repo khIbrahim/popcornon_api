@@ -9,7 +9,7 @@ class AuthService {
     async register(userData) {
         const existingEmail = await User.findOne({email: userData.email});
         if (existingEmail) {
-            throw new AppError("Email already exist")
+            throw new AppError("L'Email est déjà utilisé", 400);
         }
 
         const user = await User.create({
@@ -35,11 +35,11 @@ class AuthService {
                 await user.incLoginAttempts();
             }
 
-            throw new UnauthorizedError("Incorrect email or password")
+            throw new UnauthorizedError("Email ou mot de passe incorrect")
         }
 
         if(user.isLocked){
-            throw new AppError("Account is locked due to multiple failed login attempts. Please try again later.", 423)
+            throw new AppError("Compte bloqué après multiple tentative de connexion échouées", 423)
         }
 
         await user.resetLoginAttempts();
@@ -58,7 +58,7 @@ class AuthService {
     async update(userId, updateData) {
         const user = await User.findById(userId);
         if(! user) {
-            throw new NotFoundError("User not found")
+            throw new NotFoundError("Utilisateur non trouvé")
         }
 
         if(updateData.firstName) {
@@ -79,11 +79,11 @@ class AuthService {
     async updatePassword(userId, currentPassword, newPassword) {
         const user = await User.findById(userId).select('+password');
         if(! user) {
-            throw new NotFoundError("User not found")
+            throw new NotFoundError("Utilisateur non trouvé")
         }
 
         if(! await user.correctPassword(currentPassword, user.password)){
-            throw new UnauthorizedError("Current password is incorrect")
+            throw new UnauthorizedError("Mot de passe actuel incorrect")
         }
 
         user.password = newPassword;
@@ -102,15 +102,9 @@ class AuthService {
         const user = await User.findByEmail(email);
         if(! user) {
             return {
-                message: "Password reset instructions sent to email if it exists"
+                message: "Instructiosn de réinitialisation du mot de passe envoyées à l'email si il existe"
             }
         }
-
-        // if(user.hasActivePasswordResetToken()){
-        //     return {
-        //         message: "Password reset instructions sent to email if it exists"
-        //     }
-        // }
 
         const resetToken = user.createPasswordResetToken();
         await user.save({validateBeforeSave: false});
@@ -125,14 +119,14 @@ class AuthService {
             });
 
             return {
-                message: "Password reset instructions sent to email if it exists"
+                message: "Instructions de réinitialisation du mot de passe envoyées à l'email si il existe"
             }
         } catch(error) {
             user.passwordResetToken   = undefined;
             user.passwordResetExpires = undefined;
             await user.save({validateBeforeSave: false});
 
-            throw new AppError(`There was an error sending the email. Try again later. ${error.message}`);
+            throw new AppError("Une erreur est survenue lors de l'envoi de l'email. Veuillez réessayer plus tard.");
         }
     }
 
@@ -148,7 +142,7 @@ class AuthService {
         });
 
         if(! user){
-            throw new AppError("Token is invalid or has expired", 400);
+            throw new AppError("Le lien de réinitialisation est invalide ou a expiré", 400);
         }
 
         user.password             = newPassword;
@@ -160,7 +154,7 @@ class AuthService {
         const jwtToken = this.generateToken(user._id);
 
         return {
-            message: 'Password has been reset successfully',
+            message: "Le mot de passe a été réinitialisé avec succès",
             token: jwtToken,
             user: user
         }
