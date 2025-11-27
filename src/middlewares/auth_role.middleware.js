@@ -6,7 +6,7 @@ export const CheckRole = (...allowedRoles) => {
         const user = req.user;
 
         if(! allowedRoles.includes(user.role)){
-            return next(new UnauthorizedError("You do not have permission to perform this action."));
+            return next(new UnauthorizedError("Vous n'avez pas la permission d'effectuer cette action."));
         }
 
         next();

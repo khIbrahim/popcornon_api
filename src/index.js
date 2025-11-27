@@ -8,15 +8,16 @@ import rateLimit from "express-rate-limit";
 import mongoSanitize from "express-mongo-sanitize";
 import hpp from "hpp";
 import cinemaRouter from "./routes/cinema.routes.js";
-import cineRequestRouter from "./routes/cineRequest.routes.js";
+import cineRequestRouter from "./routes/cine_requests.routes.js";
+import moviesRouter from "./routes/movies.routes.js";
+import publicMoviesRouter from "./routes/public_movies.routes.js";
+import publicCinemaRouter from "./routes/public_cinemas.routes.js";
 
 const app = express();
-// app.use(
-//     cors({
-//         credentials: true,
-//         origin: new RegExp(process.env.CORS_ORIGIN || "http://localhost:5173"),
-//     })
-// );
+app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true
+}));
 
 // app.set("trust proxy", true);
 
@@ -51,6 +52,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/cinema", cinemaRouter);
 app.use("/api/v1/cine-request", cineRequestRouter);
+app.use("/api/v1/movies", moviesRouter);
+app.use("/api/v1/public/movies", publicMoviesRouter);
+app.use("/api/v1/public-cinemas", publicCinemaRouter);
 
 app.use(notFoundHandler);
 

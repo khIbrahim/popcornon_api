@@ -3,6 +3,7 @@ import cineRequestService from "../services/cineRequest.service.js";
 import cinemaService from "../services/cinema.service.js";
 
 class CineRequestController {
+
     create = catchAsync(async (req, res) => {
         const request = await cineRequestService.create(req.user._id, req.body);
 
@@ -41,6 +42,7 @@ class CineRequestController {
 
     getAll = catchAsync(async (req, res) => {
         const { status } = req.query;
+
         const requests = await cineRequestService.getAll(status);
 
         res.json({
@@ -52,6 +54,7 @@ class CineRequestController {
 
     review = catchAsync(async (req, res) => {
         const { status, adminNote } = req.body;
+
         const request = await cineRequestService.review(
             req.params.id,
             req.user._id,
@@ -61,10 +64,13 @@ class CineRequestController {
 
         res.json({
             success: true,
-            message: status === 'approved' ? "Demande approuvée" : "Demande rejetée",
+            message: status === "approved"
+                ? "Demande approuvée avec succès"
+                : "Demande rejetée",
             data: request
         });
     });
+
 }
 
 export default new CineRequestController();

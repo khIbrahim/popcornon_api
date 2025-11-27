@@ -1,0 +1,266 @@
+import Cinema from "../models/cinema.model.js";
+import Movie from "../models/movie.model.js";
+
+class PublicCinemasController {
+
+    getAll = async (req, res) => {
+        try {
+            const {
+                wilaya,
+                city,
+                q,
+                page = 1,
+                limit = 20,
+                sort = "createdAt",
+                order = "desc",
+            } = req.query;
+
+            const filters = { status: "active" };
+
+            if (wilaya) {
+                filters.wilaya = wilaya;
+            }
+            if (city) {
+                filters.city = new RegExp(city, "i");
+            }
+            if (q) {
+                filters.$text = { $search: q };
+            }
+
+            const pageNum = Math.max(parseInt(page, 10) || 1, 1);
+            const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+
+            const sortFieldMap = {
+                createdAt: "createdAt",
+                name: "name",
+                city: "city",
+                wilaya: "wilaya",
+            };
+            const sortField = sortFieldMap[sort] || "createdAt";
+            const sortOrder = order === "asc" ? 1 : -1;
+
+            console.log(filters);
+            const [cinemas, total] = await Promise.all([
+                Cinema.find(filters)
+                    .select(
+                        "name description address city wilaya capacity halls openingHours socialLinks phone email website status stats"
+                    )
+                    .sort({ [sortField]: sortOrder })
+                    .skip((pageNum - 1) * limitNum)
+                    .limit(limitNum)
+                    .lean(),
+                Cinema.countDocuments(filters),
+            ]);
+
+            return res.json({
+                success: true,
+                pagination: {
+                    page: pageNum,
+                    limit: limitNum,
+                    total,
+                    totalPages: Math.ceil(total / limitNum),
+                },
+                data: cinemas.map(this.#mapToPublicCinemaSummary),
+            });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({
+                success: false,
+                message: "Erreur serveur",
+            });
+        }
+    };
+
+    search = async (req, res) => {
+        try {
+            const { q } = req.query;
+
+            if (!q || q.trim().length < 2) {
+                return res.json({
+                    success: true,
+                    count: 0,
+                    data: [],
+                });
+            }
+
+            const cinemas = await Cinema.find({
+                status: "active",
+                $text: { $search: q.trim() },
+            })
+                .select("name city wilaya address capacity")
+                .limit(10)
+                .lean();
+
+            return res.json({
+                success: true,
+                count: cinemas.length,
+                data: cinemas.map(this.#mapToPublicCinemaSummary),
+            });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({
+                success: false,
+                message: "Erreur serveur",
+            });
+        }
+    };
+
+    getByName = async (req, res) => {
+        try {
+            const rawName = req.params.name || "";
+            const decodedName = decodeURIComponent(rawName);
+
+            if (! decodedName.trim()) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Nom de cinéma invalide",
+                });
+            }
+
+            const escapedName = decodedName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const nameRegex = new RegExp(`^${escapedName}$`, "i");
+
+            const cinema = await Cinema.findOne({
+                name: nameRegex,
+                status: "active",
+            })
+                .lean();
+
+            if (!cinema) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Cinéma introuvable",
+                });
+            }
+
+            const screenings = await this.#getCinemaScreenings(cinema._id);
+
+            return res.json({
+                success: true,
+                data: this.#mapToPublicCinemaDetail(cinema),
+                screenings,
+            });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({
+                success: false,
+                message: "Erreur serveur",
+            });
+        }
+    };
+
+    getOne = async (req, res) => {
+        try {
+            const cinema = await Cinema.findById(req.params.id)
+                .lean();
+
+            if (!cinema || cinema.status !== "active") {
+                return res.status(404).json({
+                    success: false,
+                    message: "Cinéma introuvable",
+                });
+            }
+
+            const screenings = await this.#getCinemaScreenings(cinema._id);
+
+            return res.json({
+                success: true,
+                data: this.#mapToPublicCinemaDetail(cinema),
+                screenings,
+            });
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({
+                success: false,
+                message: "Erreur serveur",
+            });
+        }
+    };
+
+    async #getCinemaScreenings(cinemaId) {
+        const movies = await Movie.find({
+            cinema: cinemaId,
+            status: "active",
+        })
+            .select("title poster runtime genres date time hall price")
+            .sort({ date: 1, time: 1 })
+            .lean();
+
+        return movies.map((movie) => ({
+            _id: movie._id,
+            movieId: movie._id,
+            title: movie.title,
+            poster: movie.poster,
+            runtime: movie.runtime,
+            genres: movie.genres,
+            date: movie.date,
+            time: movie.time,
+            hall: movie.hall,
+            price: movie.price,
+        }));
+    }
+
+    #mapToPublicCinemaSummary(cinema) {
+        return {
+            _id: cinema._id,
+            name: cinema.name,
+            description: cinema.description,
+            address: cinema.address,
+            city: cinema.city,
+            wilaya: cinema.wilaya,
+            capacity: cinema.capacity,
+            totalHalls: Array.isArray(cinema.halls) ? cinema.halls.length : 0,
+            socialLinks: cinema.socialLinks || {},
+            phone: cinema.phone || "",
+            website: cinema.website || "",
+            stats: cinema.stats
+                ? {
+                    totalViews: cinema.stats.totalViews || 0,
+                    totalMovies: cinema.stats.totalMovies || 0,
+                    totalScreenings: cinema.stats.totalScreenings || 0,
+                }
+                : {
+                    totalViews: 0,
+                    totalMovies: 0,
+                    totalScreenings: 0,
+                },
+        };
+    }
+
+    #mapToPublicCinemaDetail(cinema) {
+        return {
+            _id: cinema._id,
+            name: cinema.name,
+            description: cinema.description,
+            address: cinema.address,
+            city: cinema.city,
+            wilaya: cinema.wilaya,
+            phone: cinema.phone || "",
+            email: cinema.email || "",
+            website: cinema.website || "",
+            socialLinks: cinema.socialLinks || {},
+            capacity: cinema.capacity,
+            halls: Array.isArray(cinema.halls)
+                ? cinema.halls.map((hall) => ({
+                    name: hall.name,
+                    capacity: hall.capacity,
+                    type: hall.type,
+                }))
+                : [],
+            openingHours: cinema.openingHours || {},
+            stats: cinema.stats
+                ? {
+                    totalViews: cinema.stats.totalViews || 0,
+                    totalMovies: cinema.stats.totalMovies || 0,
+                    totalScreenings: cinema.stats.totalScreenings || 0,
+                }
+                : {
+                    totalViews: 0,
+                    totalMovies: 0,
+                    totalScreenings: 0,
+                },
+        };
+    }
+}
+
+export default new PublicCinemasController();

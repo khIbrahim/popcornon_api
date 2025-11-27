@@ -42,7 +42,7 @@ const registerSchema = z.object({
             .transform((val) => val.charAt(0).toUpperCase() + val.slice(1)),
         phone: z
             .string()
-            .regex(/^\+?[1-9]\d{1,14}$/, "Numéro de téléphone invalide")
+            .regex(/^[0-9]{10}$/, "Le numéro doit contenir exactement 10 chiffres")
             .optional(),
         acceptTerms: z
             .boolean()

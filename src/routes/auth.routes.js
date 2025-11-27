@@ -4,6 +4,7 @@ import {registerSchema, loginSchema, updateSchema, updatePasswordSchema, resetPa
 import authController from "../controllers/auth.controller.js";
 import {CheckAuth} from "../middlewares/auth.middleware.js";
 import { z } from "zod";
+import {CheckRole} from "../middlewares/auth_role.middleware.js";
 
 const router = express.Router();
 
@@ -57,6 +58,13 @@ router.patch(
     '/reset-password/:token',
     validate(resetPasswordSchema),
     authController.resetPassword
+)
+
+router.delete(
+    '/delete/:id',
+    CheckAuth,
+    CheckRole('admin'),
+    authController.delete
 )
 
 export default router;

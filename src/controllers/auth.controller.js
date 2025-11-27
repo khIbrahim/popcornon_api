@@ -48,6 +48,7 @@ class AuthController {
     me = catchAsync(async (req, res) => {
         const user = req.user;
 
+
         return res.status(200).json({
             success: true,
             message: "Utilisateur récupéré avec succès",
@@ -115,6 +116,27 @@ class AuthController {
             data: result.user
         })
     })
+
+    delete = catchAsync(async(req, res) => {
+        console.log(req.params);
+
+        // return res.status(200).json({test: "test"});
+        const {id} = req.params;
+
+        const deleted = await authService.delete(id);
+
+        if(deleted){
+            return res.status(201).json({
+                success: true,
+                message: "Utilisateur supprimé avec succès"
+            })
+        }
+
+        res.status(400).json({
+            success: false,
+            message: "Une erreur s'est produite"
+        })
+    });
 
     sendTokenResponse(res, token, statusCode, payload) {
         const cookieOptions = {

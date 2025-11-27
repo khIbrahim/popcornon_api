@@ -76,6 +76,18 @@ class AuthService {
         return this.sanitizeUser(user);
     }
 
+    async delete(userId) {
+        try {
+            await User.findOneAndDelete({_id: userId})
+
+            return true;
+        } catch (error) {
+            console.log("Une erreur s'est produite lors de la suppression de l'utilisateur");
+
+            return false;
+        }
+    }
+
     async updatePassword(userId, currentPassword, newPassword) {
         const user = await User.findById(userId).select('+password');
         if(! user) {
@@ -184,7 +196,6 @@ class AuthService {
 
         return userObject;
     }
-
 }
 
 export default new AuthService();
