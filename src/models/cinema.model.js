@@ -104,6 +104,18 @@ const cinemaSchema = new mongoose.Schema({
         default: [],
     },
 
+    location: {
+        type: {
+            type: String,
+            enum: ['Point'],
+            default: 'Point',
+        },
+        coordinates: {
+            type: [Number],
+            required: true,
+        },
+    },
+
     openingHours: {
         monday: { type: dayHoursSchema, default: () => ({ open: "14:00", close: "23:00", closed: false }) },
         tuesday: { type: dayHoursSchema, default: () => ({ open: "14:00", close: "23:00", closed: false }) },

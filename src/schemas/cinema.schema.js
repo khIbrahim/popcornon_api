@@ -136,3 +136,12 @@ export const updateHallsSchema = z.object({
         halls: z.array(hallSchema).min(1, "Au moins une salle requise"),
     })
 });
+
+export const updateLocationSchema = z.object({
+    body: z.object({
+        location: z.object({
+            type: z.literal('Point'),
+            coordinates: z.array(z.number()).length(2)
+        })
+    })
+});

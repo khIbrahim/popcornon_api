@@ -5,6 +5,7 @@ import User from "../models/user.model.js";
 import CineRequest from "../models/cineRequest.model.js";
 
 class CinemaService {
+
     async getByOwner(ownerId) {
         return Cinema.findOne({ owner: ownerId });
     }
@@ -13,7 +14,7 @@ class CinemaService {
         const cinema = await Cinema. findById(cinemaId)
             .populate('owner', 'firstName lastName email');
 
-        if (!cinema) {
+        if (! cinema) {
             throw new AppError("Cinéma non trouvé", 404);
         }
 
@@ -188,6 +189,20 @@ class CinemaService {
     async isOwner(cinemaId, userId) {
         const cinema = await Cinema.findById(cinemaId). select('owner');
         return cinema && cinema.owner. toString() === userId. toString();
+    }
+
+    async updateLocation(cinemaId, location) {
+        const cinema = await Cinema.findByIdAndUpdate(
+            cinemaId,
+            { location },
+            { new: true }
+        );
+
+        if (! cinema) {
+            throw new AppError("Cinéma non trouvé", 404);
+        }
+
+        return cinema;
     }
 }
 

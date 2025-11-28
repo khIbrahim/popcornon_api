@@ -7,7 +7,8 @@ import {
     createCinemaSchema,
     updateCinemaSchema,
     updateHallsSchema,
-    updateHoursSchema
+    updateHoursSchema,
+    updateLocationSchema
 } from "../schemas/cinema.schema.js";
 import {z} from "zod";
 
@@ -68,6 +69,13 @@ router.patch(
         })
     })),
     cinemaController.updateStatus
-)
+);
+
+//update location
+router.patch(
+    '/location',
+    validate(updateLocationSchema),
+    cinemaController.updateLocation
+);
 
 export default router;

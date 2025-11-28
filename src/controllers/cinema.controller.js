@@ -5,7 +5,7 @@ class CinemaController {
     me = catchAsync(async (req, res) => {
         const cinema = await cinemaService.getByOwner(req.user._id);
 
-        if (!cinema) {
+        if (! cinema) {
             return res.status(404).json({
                 success: false,
                 message: "Vous n'avez pas de cinéma associé à ce compte",
@@ -15,45 +15,6 @@ class CinemaController {
         res.json({
             success: true,
             data: cinema
-        });
-    });
-
-    getById = catchAsync(async (req, res) => {
-        const cinema = await cinemaService.getById(req.params.id);
-
-        res.json({
-            success: true,
-            data: cinema
-        });
-    });
-
-    getAll = catchAsync(async (req, res) => {
-        const { wilaya, city } = req.query;
-        const cinemas = await cinemaService.getAll({ wilaya, city });
-
-        res.json({
-            success: true,
-            count: cinemas.length,
-            data: cinemas
-        });
-    });
-
-    search = catchAsync(async (req, res) => {
-        const { q } = req.query;
-
-        if (! q || q.trim().length < 2) {
-            return res.status(400).json({
-                success: false,
-                message: "Terme de recherche trop court (min 2 caractères)"
-            });
-        }
-
-        const cinemas = await cinemaService.search(q);
-
-        res.json({
-            success: true,
-            count: cinemas.length,
-            data: cinemas
         });
     });
 
@@ -124,15 +85,6 @@ class CinemaController {
         });
     });
 
-    getStats = catchAsync(async (req, res) => {
-        const stats = await cinemaService.getStats(req.user._id);
-
-        res.json({
-            success: true,
-            data: stats
-        });
-    });
-
     updateStatus = catchAsync(async (req, res) => {
         const { status } = req.body;
         const cinema = await cinemaService.updateStatus(req.user._id, status);
@@ -141,15 +93,6 @@ class CinemaController {
             success: true,
             message: `Statut mis à jour: ${status}`,
             data: cinema
-        });
-    });
-
-    deleteById = catchAsync(async (req, res) => {
-        await cinemaService.deleteById(req.params.id);
-
-        res.json({
-            success: true,
-            message: "Cinéma supprimé"
         });
     });
 
@@ -184,6 +127,26 @@ class CinemaController {
             data: cinema.openingHours
         });
     });
+
+    updateLocation = catchAsync(async(req, res) => {
+        let cinema = await cinemaService.getByOwner(req.user._id);
+
+        if (! cinema) {
+            return res.status(404).json({
+                success: false,
+                message: "Vous n'avez pas de cinéma associé à ce compte",
+            });
+        }
+
+        cinema = await cinemaService.updateLocation(cinema._id, req.body.location);
+
+        res.json({
+            success: true,
+            message: "Localisation mise à jour",
+            data: cinema.location
+        });
+    })
+
 }
 
 export default new CinemaController();
