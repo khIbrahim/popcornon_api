@@ -4,30 +4,34 @@ class PublicMoviesController {
 
     getAll = async (req, res) => {
         try {
-            const { genre, wilaya } = req.query;
+            const { genre, wilaya, date } = req.query;
 
-            const query = {};
+            const query = { status: "active" };
 
             if (genre) {
                 query.genres = genre;
             }
+
             if (wilaya) {
                 query["cinema.wilaya"] = wilaya;
             }
-            query.status = "active";
+
+            if (date) {
+                query.date = date;
+            }
 
             const movies = await Movie.find(query)
                 .populate("cinema", "name city wilaya")
-                .sort({ releaseDate: -1 });
+                .sort({ time: 1, releaseDate: -1 });
 
             return res.json({
                 success: true,
                 count: movies.length,
-                data: movies.map(this.#mapToPublicMovie),
+                data: movies. map(this.#mapToPublicMovie),
             });
         } catch (err) {
             console.error(err);
-            return res.status(500).json({
+            return res. status(500).json({
                 success: false,
                 message: "Erreur serveur",
             });
