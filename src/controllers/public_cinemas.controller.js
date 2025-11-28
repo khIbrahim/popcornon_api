@@ -1,5 +1,6 @@
 import Cinema from "../models/cinema.model.js";
 import Movie from "../models/movie.model.js";
+import public_cinema_service from "../services/public_cinema_service.js";
 
 class PublicCinemasController {
 
@@ -9,58 +10,18 @@ class PublicCinemasController {
                 wilaya,
                 city,
                 q,
-                page = 1,
+                page  = 1,
                 limit = 20,
-                sort = "createdAt",
-                order = "desc",
+                sort   = "createdAt",
+                order  = "desc",
             } = req.query;
 
-            const filters = { status: "active" };
-
-            if (wilaya) {
-                filters.wilaya = wilaya;
-            }
-            if (city) {
-                filters.city = new RegExp(city, "i");
-            }
-            if (q) {
-                filters.$text = { $search: q };
-            }
-
-            const pageNum = Math.max(parseInt(page, 10) || 1, 1);
-            const limitNum = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
-
-            const sortFieldMap = {
-                createdAt: "createdAt",
-                name: "name",
-                city: "city",
-                wilaya: "wilaya",
-            };
-            const sortField = sortFieldMap[sort] || "createdAt";
-            const sortOrder = order === "asc" ? 1 : -1;
-
-            console.log(filters);
-            const [cinemas, total] = await Promise.all([
-                Cinema.find(filters)
-                    .select(
-                        "name description address city wilaya capacity halls openingHours socialLinks phone email website status stats"
-                    )
-                    .sort({ [sortField]: sortOrder })
-                    .skip((pageNum - 1) * limitNum)
-                    .limit(limitNum)
-                    .lean(),
-                Cinema.countDocuments(filters),
-            ]);
+            const {pagination, data} = await public_cinema_service.getAll({wilaya, city, q, page, limit, sort, order});
 
             return res.json({
                 success: true,
-                pagination: {
-                    page: pageNum,
-                    limit: limitNum,
-                    total,
-                    totalPages: Math.ceil(total / limitNum),
-                },
-                data: cinemas.map(this.#mapToPublicCinemaSummary),
+                pagination: pagination,
+                data: data.map(this.#mapToPublicCinemaSummary),
             });
         } catch (err) {
             console.error(err);
@@ -224,6 +185,7 @@ class PublicCinemasController {
                     totalMovies: 0,
                     totalScreenings: 0,
                 },
+            location: cinema.location || null,
         };
     }
 
@@ -259,6 +221,7 @@ class PublicCinemasController {
                     totalMovies: 0,
                     totalScreenings: 0,
                 },
+            location: cinema.location || null,
         };
     }
 }
