@@ -12,6 +12,7 @@ import cineRequestRouter from "./routes/cine_requests.routes.js";
 import moviesRouter from "./routes/movies.routes.js";
 import publicMoviesRouter from "./routes/public_movies.routes.js";
 import publicCinemaRouter from "./routes/public_cinemas.routes.js";
+import searchController from "./controllers/search.controller.js";
 
 const app = express();
 app.use(cors({
@@ -55,6 +56,7 @@ app.use("/api/v1/cine-request", cineRequestRouter);
 app.use("/api/v1/movies", moviesRouter);
 app.use("/api/v1/public/movies", publicMoviesRouter);
 app.use("/api/v1/public-cinemas", publicCinemaRouter);
+app.get("/api/v1/public/search", searchController.search);
 
 app.use(notFoundHandler);
 
