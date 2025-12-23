@@ -147,6 +147,23 @@ class CinemaController {
         });
     })
 
+    updateImage = catchAsync(async(req, res) => {
+        if(! req.photo || ! req.cover){
+            return res.status(400).json({
+                success: false,
+                message: "Photo ou photo de couverture manquante",
+            })
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Images mises à jour",
+            data: {
+                photo: req.photo,
+                coverPhoto: req.cover
+            }
+        })
+    })
 }
 
 export default new CinemaController();

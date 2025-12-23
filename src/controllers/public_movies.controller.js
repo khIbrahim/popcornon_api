@@ -6,68 +6,169 @@ class PublicMoviesController {
         try {
             const { genre, wilaya, date } = req.query;
 
-            const query = { status: "active" };
+            const matchQuery = { status: "active" };
 
             if (genre) {
-                query.genres = genre;
+                matchQuery.genres = genre;
             }
-
-            if (wilaya) {
-                query["cinema.wilaya"] = wilaya;
-            }
-
             if (date) {
-                query.date = date;
+                matchQuery.date = date;
             }
 
-            const movies = await Movie.find(query)
-                .populate("cinema", "name city wilaya")
-                .sort({ time: 1, releaseDate: -1 });
+            const pipeline = [
+                { $match:  matchQuery },
+                {
+                    $lookup: {
+                        from: "cinemas",
+                        localField:  "cinema",
+                        foreignField: "_id",
+                        as: "cinema"
+                    }
+                },
+                { $unwind: "$cinema" },
+
+                ...(wilaya ? [{ $match: { "cinema. wilaya": wilaya } }] : []),
+
+                {
+                    $group: {
+                        _id: "$tmdbId",
+                        movieId: { $first: "$_id" }, // ← Garde l'ID de la séance
+                        tmdbId: { $first: "$tmdbId" },
+                        title: { $first: "$title" },
+                        poster: { $first: "$poster" },
+                        backdrop: { $first: "$backdrop" },
+                        runtime: { $first: "$runtime" },
+                        voteAverage: { $first:  "$voteAverage" },
+                        genres: { $first: "$genres" },
+                        releaseDate: { $first: "$releaseDate" },
+                        overview: { $first: "$overview" },
+                        screenings: {
+                            $push: {
+                                _id:  "$_id",
+                                cinema: {
+                                    _id: "$cinema._id",
+                                    name: "$cinema.name",
+                                    city: "$cinema.city",
+                                    wilaya: "$cinema.wilaya"
+                                },
+                                date: "$date",
+                                time: "$time",
+                                hall: "$hall",
+                                price: "$price"
+                            }
+                        }
+                    }
+                },
+                { $sort: { releaseDate: -1 } }
+        ];
+
+            const movies = await Movie.aggregate(pipeline);
 
             return res.json({
                 success: true,
                 count: movies.length,
-                data: movies. map(this.#mapToPublicMovie),
+                data: movies. map(m => ({
+                    _id:  m. movieId,
+                    tmdbId: m.tmdbId,
+                    title: m.title,
+                    poster: m.poster,
+                    backdrop: m.backdrop,
+                    runtime: m.runtime,
+                    voteAverage:  m.voteAverage,
+                    genres: m.genres,
+                    releaseDate: m.releaseDate,
+                    overview: m.overview,
+                    screenings: m.screenings
+                }))
             });
         } catch (err) {
             console.error(err);
-            return res. status(500).json({
+            return res.status(500).json({
                 success: false,
-                message: "Erreur serveur",
+                message: "Erreur serveur"
             });
         }
     };
 
     getOne = async (req, res) => {
         try {
-            const movie = await Movie.findById(req.params.id)
-                .populate("cinema", "name city wilaya");
+            const {id} = req.params;
 
-            if (!movie || movie.status !== "active") {
+            const screening = await Movie.findById(id);
+            if(! screening || screening.status !== "active") {
+                return res.status(404).json({
+                    success: false,
+                    message: "Séance introuvable",
+                });
+            }
+
+            const result = await Movie.aggregate([
+                {$match: {tmdbId: screening.tmdbId, status: "active"}},
+                {
+                    $lookup: {
+                        from: "cinemas",
+                        localField: "cinema",
+                        foreignField: "_id",
+                        as: "cinema"
+                    }
+                },
+                {$unwind: "$cinema"},
+                {
+                    $group: {
+                        _id: "$tmdbId",
+                        movieId: { $first: "$_id" },
+                        tmdbId: { $first: "$tmdbId" },
+                        title: { $first: "$title" },
+                        poster: { $first: "$poster" },
+                        backdrop: { $first: "$backdrop" },
+                        runtime: { $first: "$runtime" },
+                        voteAverage: { $first: "$voteAverage" },
+                        genres: { $first: "$genres" },
+                        releaseDate: { $first: "$releaseDate" },
+                        overview: { $first: "$overview" },
+                        screenings: {
+                            $push: {
+                                _id: "$_id",
+                                cinema: {
+                                    _id: "$cinema._id",
+                                    name: "$cinema.name",
+                                    city: "$cinema.city",
+                                    wilaya: "$cinema.wilaya",
+                                },
+                                date: "$date",
+                                time: "$time",
+                                hall: "$hall",
+                                price: "$price",
+                            },
+                        },
+                    }
+                }
+            ]);
+
+            if(! result || result.length === 0) {
                 return res.status(404).json({
                     success: false,
                     message: "Film introuvable",
                 });
             }
 
+            const movie = result[0];
+
             return res.json({
                 success: true,
-                data: this.#mapToPublicMovie(movie),
-                screenings: [
-                    {
-                        _id: movie._id,
-                        cinema: {
-                            _id: movie.cinema._id,
-                            name: movie.cinema.name,
-                            city: movie.cinema.city,
-                            wilaya: movie.cinema.wilaya,
-                        },
-                        date: movie.date,
-                        time: movie.time,
-                        hall: movie.hall,
-                        price: movie.price,
-                    }
-                ]
+                data: {
+                    _id: movie. movieId,
+                    tmdbId: movie.tmdbId,
+                    title: movie.title,
+                    poster: movie.poster,
+                    backdrop: movie.backdrop,
+                    runtime: movie.runtime,
+                    voteAverage: movie.voteAverage,
+                    genres: movie.genres,
+                    releaseDate: movie.releaseDate,
+                    overview: movie.overview,
+                },
+                screenings: movie.screenings,
             });
 
         } catch (err) {

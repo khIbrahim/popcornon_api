@@ -8,9 +8,12 @@ import {
     updateCinemaSchema,
     updateHallsSchema,
     updateHoursSchema,
-    updateLocationSchema
+    updateLocationSchema,
+    updateImageSchema
 } from "../schemas/cinema.schema.js";
 import {z} from "zod";
+import multer from "multer";
+import {parseMedia} from "../middlewares/media.middleware.js";
 
 const router = express.Router();
 
@@ -71,11 +74,17 @@ router.patch(
     cinemaController.updateStatus
 );
 
-//update location
 router.patch(
     '/location',
     validate(updateLocationSchema),
     cinemaController.updateLocation
 );
+
+router.post(
+    '/image',
+    // validate(updateImageSchema),
+    parseMedia,
+    cinemaController.updateImage
+)
 
 export default router;

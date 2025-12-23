@@ -3,6 +3,7 @@ import { AppError } from '../utils/errors.js';
 import authService from "./auth.service.js";
 import User from "../models/user.model.js";
 import CineRequest from "../models/cineRequest.model.js";
+import mediaService from "./media.service.js";
 
 class CinemaService {
 
@@ -203,6 +204,10 @@ class CinemaService {
         }
 
         return cinema;
+    }
+
+    async updateImage(_id, {photo, cover}) {
+        console.log(photo, cover);
     }
 }
 

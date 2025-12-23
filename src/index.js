@@ -29,7 +29,7 @@ const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     message: "Too many requests from this IP, please try again later."
 })
-app.use('/api', limiter);
+// app.use('/api', limiter);
 
 // const authLimiter = rateLimit({
 //     max: 5, // 5 tentatives

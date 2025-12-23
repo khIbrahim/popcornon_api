@@ -145,3 +145,10 @@ export const updateLocationSchema = z.object({
         })
     })
 });
+
+export const updateImageSchema = z.object({
+    body: z.object({
+        photo: z.string().optional().nullable(),
+        cover: z.string().optional().nullable(),
+    })
+});

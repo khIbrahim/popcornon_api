@@ -116,6 +116,22 @@ const cinemaSchema = new mongoose.Schema({
         },
     },
 
+    media: {
+        photo: {
+            type: String,
+            default: null,
+        },
+        cover: {
+            type: String,
+            default: null
+        }
+    },
+
+    date: {
+        type: String,
+        required: true,
+    },
+
     openingHours: {
         monday: { type: dayHoursSchema, default: () => ({ open: "14:00", close: "23:00", closed: false }) },
         tuesday: { type: dayHoursSchema, default: () => ({ open: "14:00", close: "23:00", closed: false }) },

@@ -55,7 +55,9 @@ class MovieService {
 
     async getMyMovies(userId, { date, status } = {}) {
         const cinema = await Cinema.findOne({ owner: userId });
-        if (! cinema) return [];
+        if (! cinema) {
+            return [];
+        }
 
         const query = { cinema: cinema._id };
 
@@ -67,7 +69,7 @@ class MovieService {
             query.status = status;
         }
 
-        return Movie.find(query).sort({ time: 1, createdAt: -1 });
+        return await Movie.find(query).sort({time: 1, createdAt: -1});
     }
 
     async update(userId, movieId, data) {
